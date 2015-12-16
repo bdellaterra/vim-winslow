@@ -28,6 +28,49 @@ if !exists('g:winslow#easyModeTeardownFile')
 endif
 
 
+" List of commands that help undo easy mode settings
+if !exists('s:easyTeardown')
+    let s:easyTeardown = []
+endif
+
+
+" Returns corresponding unmap command for a given map command.
+" map - a map command without the rhs (right hand side)
+"       that when executed returns the current mapping or 'No mapping found'
+function! s:UnmapCommand( map )
+
+    " Generate unmap command by eliminating 'nore' and adding 'un'
+    " WARNING: This has not been fully verified
+    let unmap_cmd = substitute( a:map, '^\w\+\zsnore', '', '' ) 
+    let unmap_cmd = substitute( a:map, '^[^m]\?\zs\%(nore\)\?\ze', 'un', '' )
+
+    return unmap_cmd
+
+endfunction
+
+
+" Adds reset for current state of a Vim mapping to the teardown cmds
+" map - a map command without the rhs (right hand side)
+"       that when executed returns the current mapping or 'No mapping found'
+function! s:AddTeardownMapping( map )
+
+    " Redirect output of map query to a variable
+    redir => map_state
+    exe a:map
+    redir END
+
+    " If no mapping found...
+    if map_state =~ '^\_s*No mapping found\_s*$'
+	    
+	" Record unmap command to reset default mapping
+	let s:easyTeardown += [ s:UnmapCommand(map_state) ]
+
+    endif
+    " ...Otherwise the non-default mapping should have been recorded to the
+    " initial exrc file that was auto-generated.
+
+endfunction
+
 
 " Function to setup custom "easy mode" configurations, and also prep an
 " exrc file to undo them
