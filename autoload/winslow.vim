@@ -20,3 +20,21 @@ if !exists('g:winslow#easyModeTeardownFile')
 	let g:winslow#easyModeTeardownFile = g:winslow#TmpDir . 'easyModeTeardown.exrc'
 endif
 
+
+
+" Function to setup custom "easy mode" configurations, and also prep an
+" exrc file to undo them
+function! ActivateCustomEasyMode()
+
+    " Make a backup of current settings and mappings (see :help mkexrc)
+    exe 'mkexrc! ' . fnameescape(g:winslow#easyModeTeardownFile)
+
+    " Use select mode instead of visual mode
+    set selectmode=mouse,key,cmd
+
+    " Use insert mode instead of normal mode
+    set insertmode
+
+endfunction
+
+
