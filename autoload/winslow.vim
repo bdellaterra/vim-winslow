@@ -126,11 +126,44 @@ function! ActivateCustomEasyMode()
     exe 'mkexrc! ' . fnameescape(g:winslow#easyModeTeardownFile)
 
     " Use select mode instead of visual mode
+	call s:AddTeardownSetting('selectmode')
     set selectmode=mouse,key,cmd
 
     " Use insert mode instead of normal mode
+	call s:AddTeardownSetting('insertmode')
     set insertmode
 
+    " Right-click should place cursor
+    call s:AddTeardownMapping('imap <RightMouse>')
+    inoremap <silent> <RightMouse> <LeftMouse><RightMouse><C-R>=<SID>RightClickCursorFix()<CR>
+    " Nullify Ctrl+LeftMouse since it's easy to hit accidentally and not used in
+    " this configuration
+    " TODO: Investigate how this affects ctags
+    call s:AddTeardownMapping('nmap <C-LeftMouse>')
+    call s:AddTeardownMapping('map  <C-LeftMouse>')
+    call s:AddTeardownMapping('imap <C-LeftMouse>')
+    call s:AddTeardownMapping('nmap <C-2-LeftMouse>')
+    call s:AddTeardownMapping('map  <C-2-LeftMouse>')
+    call s:AddTeardownMapping('imap <C-2-LeftMouse>')
+    call s:AddTeardownMapping('nmap <C-3-LeftMouse>')
+    call s:AddTeardownMapping('map  <C-3-LeftMouse>')
+    call s:AddTeardownMapping('imap <C-3-LeftMouse>')
+    call s:AddTeardownMapping('nmap <C-4-LeftMouse>')
+    call s:AddTeardownMapping('map  <C-4-LeftMouse>')
+    call s:AddTeardownMapping('imap <C-4-LeftMouse>')
+    nmap <C-LeftMouse> <LeftMouse>
+    map  <C-LeftMouse> <LeftMouse>
+    imap <C-LeftMouse> <LeftMouse>
+    nmap <C-2-LeftMouse> <2-LeftMouse>
+    map  <C-2-LeftMouse> <2-LeftMouse>
+    imap <C-2-LeftMouse> <2-LeftMouse>
+    nmap <C-3-LeftMouse> <3-LeftMouse>
+    map  <C-3-LeftMouse> <3-LeftMouse>
+    imap <C-3-LeftMouse> <3-LeftMouse>
+    nmap <C-4-LeftMouse> <4-LeftMouse>
+    map  <C-4-LeftMouse> <4-LeftMouse>
+    imap <C-4-LeftMouse> <4-LeftMouse>
+	
     " FILE MAPPINGS
 
     " <C-n>: Create new file
