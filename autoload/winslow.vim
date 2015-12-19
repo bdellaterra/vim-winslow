@@ -27,11 +27,47 @@ if !exists('g:winslow#easyModeTeardownFile')
 	let g:winslow#easyModeTeardownFile = g:winslow#TmpDir . 'easyModeTeardown.exrc'
 endif
 
-
 " List of commands that help undo easy mode settings
 if !exists('s:easyTeardown')
     let s:easyTeardown = []
 endif
+
+" Boolean indicating whether easy mode settings are active or not
+if !exists('s:easyModeIsActive')
+    let s:easyModeIsActive = 0
+endif
+
+" Leader for easy mode. This will trigger normal mode leader commands.
+" Default is the normal leader pressed twice. 
+if !exists('g:winslow#easyModeLeader')
+    let g:winslow#easyModeLeader = '<Leader><Leader>'
+endif
+
+" Trigger for running Ex commands in Easy mode.
+" Default is leader followed by the normal command key.
+if !exists('g:winslow#easyModeCommandLeader')
+    exe "let g:winslow#easyModeCommandLeader = '<leader>:'"
+endif
+
+" Trigger for temporarily escaping Easy/insert mode to run a single normal mode
+" command. Default is the Escape key
+" Vim's native Control-O mapping for this behavior is another option.
+if !exists('g:winslow#easyModeEscapeLeader')
+    let g:winslow#easyModeEscapeLeader = '<Esc>'
+endif
+
+
+" Adds reset for current state of a Vim setting to the teardown cmds
+function! s:AddTeardownSetting( setting )
+
+    " Record command to restore current setting
+    let s:easyTeardown += 
+		\ [ 'let &' . a:setting . "="
+		\   . "'" 
+		\   . substitute( eval( '&' . a:setting ), "'", "''", '' ) 
+		\   . "'" ]
+
+endfunction
 
 
 " Returns corresponding unmap command for a given map command.
