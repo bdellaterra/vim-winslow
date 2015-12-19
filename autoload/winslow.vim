@@ -108,6 +108,16 @@ function! s:AddTeardownMapping( map )
 endfunction
 
 
+" Fix for right-click moving cursor one character to the right
+function! s:RightClickCursorFix()
+	if col('.') > 1
+		return "\<Right>"
+	else
+		return ''
+	endif
+endfunction
+
+
 " Function to setup custom "easy mode" configurations, and also prep an
 " exrc file to undo them
 function! ActivateCustomEasyMode()
