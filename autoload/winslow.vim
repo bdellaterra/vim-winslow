@@ -120,7 +120,7 @@ endfunction
 
 " Function to setup custom "easy mode" configurations, and also prep an
 " exrc file to undo them
-function! ActivateCustomEasyMode()
+function! winslow#ActivateCustomEasyMode()
 
     " Make a backup of current settings and mappings (see :help mkexrc)
     exe 'mkexrc! ' . fnameescape(g:winslow#easyModeTeardownFile)
@@ -168,6 +168,24 @@ function! ActivateCustomEasyMode()
     " (Teardown exrc file should record any previous mappings)
     silent! sunmap <S-Q>
     silent! sunmap %
+
+    " Easy mode trigger for normal-mode leader commands.
+    call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeLeader )
+    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeLeader )
+    exe 'imap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
+    exe 'smap ' . g:winslow#easyModeLeader . ' <C-o><Leader>'
+
+    " Trigger for running Ex commands from Easy mode
+    call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeCommandLeader )
+    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeCommandLeader )
+    exe 'inoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
+    exe 'snoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
+
+    " Trigger for temporarily escaping insert mode to run a single normal mode command
+    call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeEscapeLeader )
+    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeEscapeLeader )
+    exe 'inoremap ' . g:winslow#easyModeEscapeLeader . ' <C-o>'
+    exe 'snoremap ' . g:winslow#easyModeEscapeLeader . ' <C-o>'
 	
     " FILE MAPPINGS
 
