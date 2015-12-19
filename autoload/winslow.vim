@@ -163,6 +163,11 @@ function! ActivateCustomEasyMode()
     nmap <C-4-LeftMouse> <4-LeftMouse>
     map  <C-4-LeftMouse> <4-LeftMouse>
     imap <C-4-LeftMouse> <4-LeftMouse>
+
+    " Delete unwanted keymaps that conflict w. select mode
+    " (Teardown exrc file should record any previous mappings)
+    silent! sunmap <S-Q>
+    silent! sunmap %
 	
     " FILE MAPPINGS
 
