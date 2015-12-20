@@ -118,6 +118,36 @@ function! s:RightClickCursorFix()
 endfunction
 
 
+" NOTE: Using <SID> in function names so they can be called from a mapping. (See :help <SID>)
+
+" Select all text in buffer
+function! <SID>SelectAll()
+    " Checking &slm so select mode will work properly. (See :help slm)
+    exe "normal! gg" . (&slm == "" ? "VG" : "gH\<C-O>G")
+endfunction
+
+
+" Fix for idiosyncracies with paste mode
+function! <SID>PasteFix()
+    normal `[v`]:s:^\s\+::g
+    normal gv=
+endfunction
+
+
+" Fix for idiosyncracies with pasting in over selcted text
+function! <SID>VisualModePasteFix()
+    " NOTE: ==# is like == but case-sensitive
+    if g:VisualMode ==# 'v'
+	let g:VisualModePaste = 'P'
+	return 0
+    elseif g:VisualMode ==# 'V'
+	let g:Test = localtime()
+	let @* = substitute( @*, '\n$', '', '' )
+	let g:VisualModePaste = 'P'
+    endif
+endfunction
+
+
 " Function to setup custom "easy mode" configurations, and also prep an
 " exrc file to undo them
 function! winslow#ActivateCustomEasyMode()
@@ -208,7 +238,45 @@ function! winslow#ActivateCustomEasyMode()
     " <C-q>: Quit
     inoremap  <silent> <C-q> <C-o>:confirm qa<CR>
     snoremap  <silent> <C-q> <C-o>:<C-u>confirm qa<CR>
-	
+
+    "  EDIT MAPPINGS
+
+    " <C-z>: Undo
+    call s:AddTeardownMapping( 'imap <C-z>' )
+    call s:AddTeardownMapping( 'smap <C-z>' )
+    inoremap  <silent> <C-z> <C-o>:undo<CR>
+    snoremap  <silent> <C-z> <C-o>:<C-u>undo<CR>
+
+    " <C-y>: Redo
+    call s:AddTeardownMapping( 'imap <C-y>' )
+    call s:AddTeardownMapping( 'smap <C-y>' )
+    inoremap  <silent> <C-y> <C-o>:redo<CR>
+    snoremap  <silent> <C-y> <C-o>:<C-u>redo<CR>
+
+    " <C-x>: Cut
+    call s:AddTeardownMapping( 'imap <C-x>' )
+    call s:AddTeardownMapping( 'smap <C-x>' )
+    inoremap  <silent> <C-x> <C-o>:normal V"+xi<CR>
+    snoremap  <silent> <C-x> <C-\><C-N>:normal `<v`>"+xi<CR><C-\><C-G>
+
+    " <C-c>: Copy
+    call s:AddTeardownMapping( 'imap <C-c>' )
+    call s:AddTeardownMapping( 'smap <C-c>' )
+    inoremap  <silent> <C-c> <C-o>:normal V"+y<CR>
+    snoremap  <silent> <C-c> <C-\><C-N>:normal `<v`>"+y<CR><C-\><C-G>
+
+    " <C-v>: Paste
+    call s:AddTeardownMapping( 'imap <C-v>' )
+    call s:AddTeardownMapping( 'smap <C-v>' )
+    inoremap  <silent> <C-v> <C-o>:let save_ve=&ve<CR><C-O>:set ve=onemore<CR><C-O>"+gP<C-\><C-N>`]<C-\><C-N>a<C-O>:let &ve=save_ve<CR>
+    snoremap  <silent> <C-v> <C-O>:<C-U>:let g:VisualMode = visualmode() \| call <SID>VisualModePasteFix()<CR>:exe 'normal gv"+g' . g:VisualModePaste<CR><C-O>:call <SID>PasteFix()<CR>:unlet g:VisualMode<CR><C-\><C-N>`]<C-\><C-N>a
+
+    " <C-a>: Select All
+    call s:AddTeardownMapping( 'imap <C-a>' )
+    call s:AddTeardownMapping( 'smap <C-a>' )
+    inoremap  <silent> <C-a> <C-o>:call <SID>SelectAll()<CR>
+    snoremap  <silent> <C-a> <C-o>:<C-u>call <SID>SelectAll()<CR>
+
 endfunction
 
 
