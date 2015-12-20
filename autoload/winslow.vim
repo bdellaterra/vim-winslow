@@ -8,17 +8,19 @@
 
 
 " Set directory where temporary files can be stored.
+" Defaults to 'vim' folder at the system temp path
+" (trailing forward slash included - forward slashes work on both unix and windows)
 if !exists('g:winslow#TmpDir')
 	if has('Unix')
 		if exists('$TMPDIR') 
-			let g:winslow#TmpDir = s:SetSlashes($TMPDIR) . 'vim/'
+			let g:winslow#TmpDir = substitute($TMPDIR, '\v.{-}\zs(/)?$', '/vim/', '')
 		else
 			let g:winslow#TmpDir = '/var/tmp/vim/'
 		endif
 	elseif has('Windows') && exists('$TEMP') 
-		let g:winslow#TmpDir = s:SetSlashes($TEMP) . 'vim/'
+		let g:winslow#TmpDir = substitute($TEMP, '\v.{-}\zs(\\)?$', '\\vim\\', '')
 	else
-		let g:winslow#TmpDir = './.vim/tmp/'
+		let g:winslow#TmpDir = './.vim/tmp/'    " Forward slashes work on Windows
 	end
 end
 
@@ -43,7 +45,7 @@ if !exists('g:winslow#easyModeLeader')
     let g:winslow#easyModeLeader = '<Leader><Leader>'
 endif
 
-" Trigger for running Ex commands in Easy mode.
+" Trigger for running Ex commands in easy mode.
 " Default is leader followed by the normal command key.
 if !exists('g:winslow#easyModeCommandLeader')
     exe "let g:winslow#easyModeCommandLeader = '<leader>:'"
@@ -148,7 +150,7 @@ function! <SID>VisualModePasteFix()
 endfunction
 
 
-" Function to setup custom "easy mode" configurations, and also prep an
+" Function to setup custom easy mode configurations, and also prep an
 " exrc file to undo them
 function! winslow#ActivateCustomEasyMode()
 
@@ -205,7 +207,7 @@ function! winslow#ActivateCustomEasyMode()
     exe 'imap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
     exe 'smap ' . g:winslow#easyModeLeader . ' <C-o><Leader>'
 
-    " Trigger for running Ex commands from Easy mode
+    " Trigger for running Ex commands from easy mode
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeCommandLeader )
     call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeCommandLeader )
     exe 'inoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
@@ -277,6 +279,43 @@ function! winslow#ActivateCustomEasyMode()
     inoremap  <silent> <C-a> <C-o>:call <SID>SelectAll()<CR>
     snoremap  <silent> <C-a> <C-o>:<C-u>call <SID>SelectAll()<CR>
 
+
+    " Append additional teardown commands to the exrc file
+    call writefile( s:easyTeardown, 
+		\ fnameescape(g:winslow#easyModeTeardownFile) )
+
+    " Set flag indicating easy mode is active
+    let s:easyModeIsActive = 1
+	
 endfunction
 
+
+" Undo custom easy mode configurations
+function! DeactivateCustomEasyMode()
+
+    " Restore previous settings and mappings from backup
+    exe 'source ' . fnameescape(g:winslow#easyModeTeardownFile)
+
+    " Delete the backup file
+    call delete(fnameescape(g:winslow#easyModeTeardownFile))
+
+	" TODO: Find out why this seems necessary to restore normal <Esc> behavior
+	iunmap <Esc>
+
+    " Set flag indicating easy mode is not active
+    let s:easyModeIsActive = 0
+
+endfunction
+
+
+" Toggle custom easy mode configurations on/off
+function! ToggleCustomEasyMode()
+
+	if exists('s:easyModeIsActive') && s:easyModeIsActive
+		call DeactivateCustomEasyMode()
+	else
+		call ActivateCustomEasyMode()
+	endif
+
+endfunction
 
