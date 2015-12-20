@@ -215,9 +215,10 @@ function! winslow#ActivateCustomEasyMode()
 
     " Trigger for temporarily escaping insert mode to run a single normal mode command
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeEscapeLeader )
-    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeEscapeLeader )
     exe 'inoremap ' . g:winslow#easyModeEscapeLeader . ' <C-o>'
-    exe 'snoremap ' . g:winslow#easyModeEscapeLeader . ' <C-o>'
+	" DISABLED: <Esc> in select mode should probably cancel text selection
+    " call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeEscapeLeader )
+    " exe 'snoremap ' . g:winslow#easyModeEscapeLeader . ' <C-o>'
 	
     " FILE MAPPINGS
 
@@ -291,7 +292,7 @@ endfunction
 
 
 " Undo custom easy mode configurations
-function! DeactivateCustomEasyMode()
+function! winslow#DeactivateCustomEasyMode()
 
     " Restore previous settings and mappings from backup
     exe 'source ' . fnameescape(g:winslow#easyModeTeardownFile)
@@ -309,7 +310,7 @@ endfunction
 
 
 " Toggle custom easy mode configurations on/off
-function! ToggleCustomEasyMode()
+function! winslow#ToggleCustomEasyMode()
 
 	if exists('s:easyModeIsActive') && s:easyModeIsActive
 		call DeactivateCustomEasyMode()
