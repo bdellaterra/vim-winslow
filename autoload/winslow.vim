@@ -239,6 +239,8 @@ function! winslow#ActivateEasyMode()
 	exe 'inoremap ' . g:winslow#easyModeSwitch . ' <C-o>'
 	call winslow#MapEasyModeSwitch()  " May overwrite previous mapping
 	" NOTE: <Esc> in select mode just cancels the text selection
+    imenu <silent> 5.10 &Easy.&Toggle\ Easy\ Mode<Tab>Escape <Esc>
+    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode<Tab> :silent! call winslow@DeactivateEasyMode(0)<CR>
 	
 
     " FILE MAPPINGS
@@ -345,13 +347,15 @@ endfunction
 
 
 " Undo easy mode configurations
+" Optional 1st arg will unmap persistent easy mode switch if zero.
 function! winslow#DeactivateEasyMode( ... )
+
+    let persistentSwitch = get(a:000, 0, g:winslow#easyModeSwitchIsPersistent)
 
 	" TODO: Find out why this seems necessary to restore normal <Esc> behavior
 	" iunmap <Esc>
 
-	if !g:winslow#easyModeSwitchIsPersistent
-			\	&& exists('s:unmapEasyModeSwitch') && s:unmapEasyModeSwitch != ''
+	if !persistentSwitch && exists('s:unmapEasyModeSwitch') && s:unmapEasyModeSwitch != ''
 		exe s:unmapEasyModeSwitch
 	endif
 
@@ -382,9 +386,9 @@ function! winslow#ToggleEasyMode()
 endfunction
 
 
-" Setup Esc key as switch for easy mode behavior.
+" Setup Esc key as switch for easy mode behavior
 " If persistent flag is set this will overwrite any normal mode mappngs for the
-" <Esc> key and normal mode will stay active until <Esc> is used.
+" <Esc> key and normal mode will stay active until <Esc> is pressed.
 " If not persistent <Esc> will act like Vim's native <C-o> does, allowing only
 " a single normal mode command before returning to insert mode automatically.
 function! winslow#MapEasyModeSwitch()
