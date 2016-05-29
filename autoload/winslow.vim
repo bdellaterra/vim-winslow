@@ -9,7 +9,7 @@
 
 " Set directory where temporary files can be stored.
 " Defaults to 'vim' folder at the system temp path
-" (trailing forward slash included - forward slashes work on both unix and windows)
+" (trailing forward slash included - forward slashes work on both Unix and Windows)
 if !exists('g:winslow#TmpDir')
 	if has('Unix')
 		if exists('$TMPDIR') 
@@ -62,7 +62,7 @@ endif
 " NOTE: Even if this is set to 1 the switch is not activated until easy mode
 " is activated. Call winslow#MapEasyModeSwitch() to activate it beforehand.
 if !exists('g:winslow#easyModeSwitchIsPersistent')
-    let g:winslow#easyModeSwitchIsPersistent = 1
+    let g:winslow#easyModeSwitchIsPersistent = 0
 endif
 
 
@@ -88,23 +88,6 @@ function! s:UnmapCommand( map )
     return unmap_cmd
 endfunction
 
-function! UnmapTest( map )
-    " Redirect output of map query to a variable
-    redir => map_state
-    exe a:map
-    redir END
-    " If no mapping found...
-	let unmap_cmd = ''
-    if map_state =~ '^\_s*No mapping found\_s*$'
-	    let unmap_cmd = s:UnmapCommand(a:map)
-		" Record unmap command to reset default mapping
-		let s:easyTeardown += [ unmap_cmd ]
-    endif
-    " ...Otherwise the non-default mapping should have been recorded to the
-    " initial exrc file that was auto-generated.
-	let g:test = s:easyTeardown
-	return [map_state, unmap_cmd]
-endfunction
 
 " Adds reset for current state of a Vim mapping to the teardown cmds
 " map - a map command without the rhs (right hand side)
@@ -119,9 +102,8 @@ function! s:AddTeardownMapping( map )
 		" Record unmap command to reset default mapping
 		let s:easyTeardown += [ s:UnmapCommand(a:map) ]
     endif
-    " ...Otherwise the non-default mapping should have been recorded to the
-    " initial exrc file that was auto-generated.
-	let g:test = s:easyTeardown
+	" ...Otherwise the non-default mapping should be saved/restored via the
+	" exrc file 'g:winslow#easyModeTeardownFile'. (Nothing else required here)
 endfunction
 
 
@@ -140,15 +122,18 @@ endfunction
 " Select all text in buffer
 function! <SID>SelectAll()
     " Checking &slm so select mode will work properly. (See :help slm)
-    exe "normal! gg" . (&slm == "" ? "VG" : "gH\<C-O>G")
+    exe "normal! gg" . (&slm == "" ? "VG" : "gH\<C-o>G")
 endfunction
 
 
 " Fix for idiosyncracies with paste mode
 " TODO: Find another way to fix without re-indenting
 function! <SID>PasteFix()
+    let save_paste = &paste
+	let &paste = 1
     normal `[v`]:s:^\s\+::g
-    normal gv=
+    " normal gv=
+	let &paste = save_paste
 endfunction
 
 
@@ -160,65 +145,103 @@ function! <SID>VisualModePasteFix()
 		let g:VisualModePaste = 'P'
 		return 0
     elseif g:VisualMode ==# 'V'
-		" let g:Test = localtime()
 		let @* = substitute( @*, '\n$', '', '' )
 		let g:VisualModePaste = 'P'
     endif
 endfunction
 
 
-" Function to setup easy mode configurations, and also prep an
+" Function to setup easy mode configurations, while also preparing an
 " exrc file to undo them
 function! winslow#ActivateEasyMode()
 
     " Make a backup of current settings and mappings (see :help mkexrc)
     exe 'mkexrc! ' . fnameescape(g:winslow#easyModeTeardownFile)
 
-    " Use select mode instead of visual mode
+	" Use select mode instead of visual mode
 	call s:AddTeardownSetting('selectmode')
-    set selectmode=mouse,key,cmd
+	set selectmode=mouse,key,cmd
 
-    " Use insert mode instead of normal mode
+	" Use insert mode instead of normal mode
 	call s:AddTeardownSetting('insertmode')
-    set insertmode
+	set insertmode
 
-    " Right-click should place cursor
-    call s:AddTeardownMapping('imap <RightMouse>')
-    inoremap <silent> <RightMouse> <LeftMouse><RightMouse><C-R>=<SID>RightClickCursorFix()<CR>
-    " Nullify Ctrl+LeftMouse since it's easy to hit accidentally and not used in
-    " this configuration
-    " TODO: Investigate how this affects ctags
-	if !exists('g:winslow#DisableCtrlLeftMouse') || !g:winslow#DisableCtrlLeftMouse
-		call s:AddTeardownMapping('nmap <C-LeftMouse>')
-		call s:AddTeardownMapping('map  <C-LeftMouse>')
-		call s:AddTeardownMapping('imap <C-LeftMouse>')
-		call s:AddTeardownMapping('nmap <C-2-LeftMouse>')
-		call s:AddTeardownMapping('map  <C-2-LeftMouse>')
-		call s:AddTeardownMapping('imap <C-2-LeftMouse>')
-		call s:AddTeardownMapping('nmap <C-3-LeftMouse>')
-		call s:AddTeardownMapping('map  <C-3-LeftMouse>')
-		call s:AddTeardownMapping('imap <C-3-LeftMouse>')
-		call s:AddTeardownMapping('nmap <C-4-LeftMouse>')
-		call s:AddTeardownMapping('map  <C-4-LeftMouse>')
-		call s:AddTeardownMapping('imap <C-4-LeftMouse>')
-		nmap <C-LeftMouse> <LeftMouse>
-		map  <C-LeftMouse> <LeftMouse>
-		imap <C-LeftMouse> <LeftMouse>
-		nmap <C-2-LeftMouse> <2-LeftMouse>
-		map  <C-2-LeftMouse> <2-LeftMouse>
-		imap <C-2-LeftMouse> <2-LeftMouse>
-		nmap <C-3-LeftMouse> <3-LeftMouse>
-		map  <C-3-LeftMouse> <3-LeftMouse>
-		imap <C-3-LeftMouse> <3-LeftMouse>
-		nmap <C-4-LeftMouse> <4-LeftMouse>
-		map  <C-4-LeftMouse> <4-LeftMouse>
-		imap <C-4-LeftMouse> <4-LeftMouse>
-	endif
+	" Right-click should place cursor
+	call s:AddTeardownMapping('imap <RightMouse>')
+	inoremap <silent> <RightMouse> <LeftMouse><RightMouse><C-r>=<SID>RightClickCursorFix()<CR>
+
+	" Move by lines as displayed on screen, not as defined by line-breaks
+	call s:AddTeardownMapping('map <Up>')
+	call s:AddTeardownMapping('imap <Up>')
+	call s:AddTeardownMapping('vmap <Up>')
+	call s:AddTeardownMapping('smap <Up>')
+	noremap <Up> g<Up>
+	inoremap <Up> <C-o>g<Up>
+	vnoremap <Up> <C-o>g<Up>
+	snoremap <Up> <C-\><C-g>g<Up>
+
+	call s:AddTeardownMapping('map <Down>')
+	call s:AddTeardownMapping('imap <Down>')
+	call s:AddTeardownMapping('vmap <Down>')
+	call s:AddTeardownMapping('smap <Down>')
+	noremap <Down> g<Down>
+	inoremap <Down> <C-o>g<Down>
+	vnoremap <Down> <C-o>g<Down>
+	snoremap <Down> <C-\><C-g>g<Down>
+
+	" Fix select mode cursor movement
+	call s:AddTeardownMapping('smap <Left>')
+	call s:AddTeardownMapping('smap <Right>')
+	call s:AddTeardownMapping('smap <Home>')
+	call s:AddTeardownMapping('smap <End>')
+	call s:AddTeardownMapping('smap <PageUp>')
+	call s:AddTeardownMapping('smap <PageDown>')
+	snoremap <Left> <C-\><C-g>
+	snoremap <Right> <C-\><C-n>a
+	snoremap <Home> <C-\><C-g><Home>
+	snoremap <End> <C-\><C-g><End>
+	snoremap <PageUp> <C-\><C-g><PageUp>
+	snoremap <PageDown> <C-\><C-g><PageDown>
+
+	" If shift is pressed, cursor movement controls text selection
+	call s:AddTeardownMapping('imap <S-Up>')
+	call s:AddTeardownMapping('imap <S-Down>')
+	call s:AddTeardownMapping('imap <S-Left>')
+	call s:AddTeardownMapping('imap <S-Right>')
+	call s:AddTeardownMapping('imap <S-Home>')
+	call s:AddTeardownMapping('imap <S-End>')
+	call s:AddTeardownMapping('imap <S-PageUp>')
+	call s:AddTeardownMapping('imap <S-PageDown>')
+	inoremap <S-Up> <C-o>gh<Up>
+	inoremap <S-Down> <C-o>gh<Down>
+	inoremap <S-Left> <Left><C-o>gh
+	inoremap <S-Right> <C-o>gh
+	inoremap <S-Home> <Left><C-o>gh<Home>
+	inoremap <S-End> <C-o>gh<End>
+	inoremap <S-PageUp> <C-o>gh<PageUp>
+	inoremap <S-PageDown> <C-o>gh<PageDown>
+
+	call s:AddTeardownMapping('smap <S-Up>')
+	call s:AddTeardownMapping('smap <S-Down>')
+	call s:AddTeardownMapping('smap <S-Left>')
+	call s:AddTeardownMapping('smap <S-Right>')
+	call s:AddTeardownMapping('smap <S-Home>')
+	call s:AddTeardownMapping('smap <S-End>')
+	call s:AddTeardownMapping('smap <S-PageUp>')
+	call s:AddTeardownMapping('smap <S-PageDown>')
+	snoremap <S-Up> <C-o><Up>
+	snoremap <S-Down> <C-o><Down>
+	snoremap <S-Left> <C-o><Left>
+	snoremap <S-Right> <C-o><Right>
+	snoremap <S-Home> <C-o><Home>
+	snoremap <S-End> <C-o><End>
+	snoremap <S-PageUp> <C-o><PageUp>
+	snoremap <S-PageDown> <C-o><PageDown>
 
     " Delete unwanted keymaps that conflict w. select mode
     " (Teardown exrc file should record any previous mappings)
 	if !exists('g:winslow#DisableKeymapsToImproveSelectMode') || !g:winslow#DisableKeymapsToImproveSelectMode
-	    silent! sunmap <S-Q>
+	    silent! sunmap <S-q>
 	    silent! sunmap %
 	endif
 
@@ -238,9 +261,11 @@ function! winslow#ActivateEasyMode()
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeSwitch )
 	exe 'inoremap ' . g:winslow#easyModeSwitch . ' <C-o>'
 	call winslow#MapEasyModeSwitch()  " May overwrite previous mapping
-	" NOTE: <Esc> in select mode just cancels the text selection
     imenu <silent> 5.10 &Easy.&Toggle\ Easy\ Mode<Tab>Escape <Esc>
     amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode<Tab> :silent! call winslow@DeactivateEasyMode(0)<CR>
+	" <Esc> in select mode just cancels the text selection
+    call s:AddTeardownMapping( 'smap <Esc>' )
+	snoremap <Esc> <C-\><C-g>
 	
 
     " FILE MAPPINGS
@@ -307,25 +332,25 @@ function! winslow#ActivateEasyMode()
     call s:AddTeardownMapping( 'imap <C-x>' )
     call s:AddTeardownMapping( 'smap <C-x>' )
     inoremap  <silent> <C-x> <C-o>:normal V"+xi<CR>
-    snoremap  <silent> <C-x> <C-\><C-N>:normal `<v`>"+xi<CR><C-\><C-G>
+    snoremap  <silent> <C-x> <C-\><C-n>:normal `<v`>"+xi<CR><C-\><C-g>
     inoremenu <silent> 5.800 &Easy.Cu&t<Tab>Ctrl+x <C-o>:normal V"+xi<CR>
-    snoremenu <silent> 5.800 &Easy.Cu&t<Tab>Ctrl+x <C-\><C-N>:normal `<v`>"+xi<CR><C-\><C-G>
+    snoremenu <silent> 5.800 &Easy.Cu&t<Tab>Ctrl+x <C-\><C-n>:normal `<v`>"+xi<CR><C-\><C-g>
 
     " <C-c>: Copy
     call s:AddTeardownMapping( 'imap <C-c>' )
     call s:AddTeardownMapping( 'smap <C-c>' )
     inoremap  <silent> <C-c> <C-o>:normal V"+y<CR>
-    snoremap  <silent> <C-c> <C-\><C-N>:normal `<v`>"+y<CR><C-\><C-G>
+    snoremap  <silent> <C-c> <C-\><C-n>:normal `<v`>"+y<CR><C-\><C-g>
     inoremenu <silent> 5.900 &Easy.&Copy<Tab>Ctrl+c <C-o>:normal V"+y<CR>
-    snoremenu <silent> 5.900 &Easy.&Copy<Tab>Ctrl+c <C-\><C-N>:normal `<v`>"+y<CR><C-\><C-G>
+    snoremenu <silent> 5.900 &Easy.&Copy<Tab>Ctrl+c <C-\><C-n>:normal `<v`>"+y<CR><C-\><C-g>
 
     " <C-v>: Paste
     call s:AddTeardownMapping( 'imap <C-v>' )
     call s:AddTeardownMapping( 'smap <C-v>' )
-    inoremap  <silent> <C-v> <C-o>:let save_ve=&ve<CR><C-O>:set ve=onemore<CR><C-O>"+gP<C-\><C-N>`]<C-\><C-N>a<C-O>:let &ve=save_ve<CR>
-    snoremap  <silent> <C-v> <C-O>:<C-U>:let g:VisualMode = visualmode() \| call <SID>VisualModePasteFix()<CR>:exe 'normal gv"+g' . g:VisualModePaste<CR><C-O>:call <SID>PasteFix()<CR>:unlet g:VisualMode<CR><C-\><C-N>`]<C-\><C-N>a
-    inoremenu <silent> 5.1000 &Easy.&Paste<Tab>Ctrl+v <C-o>:let save_ve=&ve<CR><C-O>:set ve=onemore<CR><C-O>"+gP<C-\><C-N>`]<C-\><C-N>a<C-O>:let &ve=save_ve<CR>
-    snoremenu <silent> 5.1000 &Easy.&Paste<Tab>Ctrl+v <C-O>:<C-U>:let g:VisualMode = visualmode() \| call <SID>VisualModePasteFix()<CR>:exe 'normal gv"+g' . g:VisualModePaste<CR><C-O>:call <SID>PasteFix()<CR>:unlet g:VisualMode<CR><C-\><C-N>`]<C-\><C-N>a
+    inoremap  <silent> <C-v> <C-o>:let save_ve=&ve<CR><C-o>:set ve=onemore<CR><C-o>"+gP<C-\><C-n>`]<C-\><C-n>a<C-o>:let &ve=save_ve<CR>
+    snoremap  <silent> <C-v> <C-o>:<C-u>:let g:VisualMode = visualmode() \| call <SID>VisualModePasteFix()<CR>:exe 'normal gv"+g' . g:VisualModePaste<CR><C-o>:call <SID>PasteFix()<CR><C-o>:unlet g:VisualMode<CR><C-\><C-n>`]<C-\><C-n>a
+    inoremenu <silent> 5.1000 &Easy.&Paste<Tab>Ctrl+v <C-o>:let save_ve=&ve<CR><C-o>:set ve=onemore<CR><C-o>"+gP<C-\><C-n>`]<C-\><C-n>a<C-o>:let &ve=save_ve<CR>
+    snoremenu <silent> 5.1000 &Easy.&Paste<Tab>Ctrl+v <C-o>:<C-u>:let g:VisualMode = visualmode() \| call <SID>VisualModePasteFix()<CR>:exe 'normal gv"+g' . g:VisualModePaste<CR><C-o>:call <SID>PasteFix()<CR><C-o>:unlet g:VisualMode<CR><C-\><C-n>`.<C-\><C-n>a
 
     " <C-a>: Select All
     call s:AddTeardownMapping( 'imap <C-a>' )
