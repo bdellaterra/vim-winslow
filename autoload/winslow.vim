@@ -246,15 +246,15 @@ function! winslow#ActivateEasyMode()
 
     " Easy mode trigger for normal-mode leader commands.
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeLeader )
-    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeLeader )
+    " call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeLeader )
     exe 'inoremap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
-    exe 'snoremap ' . g:winslow#easyModeLeader . ' <C-o><Leader>'
+    " exe 'snoremap ' . g:winslow#easyModeLeader . ' <C-g><Leader>'
 
     " Trigger for running Ex commands from easy mode
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeCommandLeader )
-    call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeCommandLeader )
+    " call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeCommandLeader )
     exe 'inoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
-    exe 'snoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
+    " exe 'snoremap ' . g:winslow#easyModeCommandLeader . ' <C-g>:'
 
     " Trigger for escaping insert mode to run commands in normal mode
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeSwitch )
