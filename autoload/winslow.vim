@@ -62,7 +62,7 @@ endif
 " NOTE: Even if this is set to 1 the switch is not activated until easy mode
 " is activated. Call winslow#MapEasyModeSwitch() to activate it beforehand.
 if !exists('g:winslow#easyModeSwitchIsPersistent')
-    let g:winslow#easyModeSwitchIsPersistent = 0
+    let g:winslow#easyModeSwitchIsPersistent = 1
 endif
 
 
@@ -132,7 +132,6 @@ function! <SID>PasteFix()
     let save_paste = &paste
 	let &paste = 1
     normal `[v`]:s:^\s\+::g
-    " normal gv=
 	let &paste = save_paste
 endfunction
 
@@ -248,8 +247,8 @@ function! winslow#ActivateEasyMode()
     " Easy mode trigger for normal-mode leader commands.
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeLeader )
     call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeLeader )
-    exe 'imap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
-    exe 'smap ' . g:winslow#easyModeLeader . ' <C-o><Leader>'
+    exe 'inoremap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
+    exe 'snoremap ' . g:winslow#easyModeLeader . ' <C-o><Leader>'
 
     " Trigger for running Ex commands from easy mode
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeCommandLeader )
@@ -262,7 +261,7 @@ function! winslow#ActivateEasyMode()
 	exe 'inoremap ' . g:winslow#easyModeSwitch . ' <C-o>'
 	call winslow#MapEasyModeSwitch()  " May overwrite previous mapping
     imenu <silent> 5.10 &Easy.&Toggle\ Easy\ Mode<Tab>Escape <Esc>
-    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode<Tab> :silent! call winslow@DeactivateEasyMode(0)<CR>
+    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode<Tab> :silent! call winslow#DeactivateEasyMode(0)<CR>
 	" <Esc> in select mode just cancels the text selection
     call s:AddTeardownMapping( 'smap <Esc>' )
 	snoremap <Esc> <C-\><C-g>
@@ -401,13 +400,11 @@ endfunction
 
 " Toggle easy mode configurations on/off
 function! winslow#ToggleEasyMode()
-
 	if exists('s:easyModeIsActive') && s:easyModeIsActive
 		silent! call winslow#DeactivateEasyMode()
 	else
 		silent! call winslow#ActivateEasyMode()
 	endif
-
 endfunction
 
 
@@ -419,8 +416,6 @@ endfunction
 function! winslow#MapEasyModeSwitch()
 	if exists('g:winslow#easyModeSwitch')
 		if g:winslow#easyModeSwitchIsPersistent
-			" noremap <Esc> :silent! call winslow#ToggleEasyMode()<CR>
-			" inoremap <Esc> <C-o>:silent! call winslow#ToggleEasyMode()<CR>
 			let s:unmapEasyModeSwitch = s:UnmapCommand('map ' . g:winslow#easyModeSwitch)
 			exe 'noremap <silent> ' . g:winslow#easyModeSwitch . ' :call winslow#ToggleEasyMode()<CR>'
 			exe 'inoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-o>:call winslow#ToggleEasyMode()<CR>'
