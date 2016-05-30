@@ -13,10 +13,13 @@ if exists('g:loaded_winslowPlugin')
 end
 let g:loaded_winslowPlugin = 1
 
+" TODO: Use a timestamp or similar to handle multiple simultaneous instances
+" of this plugin being used. Files, globals, and script variables will need
+" updating. Consider repurposing s:easyModeIsActive to hold numeric id.
 
-" Set directory where temporary files can be stored.
-" Defaults to 'vim' folder at the system temp path
-" (trailing forward slash included - forward slashes work on both Unix and Windows)
+" Set directory where temporary files can be stored
+" Defaults to 'vim' folder at the system temp path. A trailing slash is included.
+" NOTE: Forward slashes work on both Windows and Unix-bases systems.
 if !exists('g:winslow#TmpDir')
 	if has('Unix')
 		if exists('$TMPDIR') 
@@ -27,7 +30,7 @@ if !exists('g:winslow#TmpDir')
 	elseif has('Windows') && exists('$TEMP') 
 		let g:winslow#TmpDir = substitute($TEMP, '\v.{-}\zs(\\)?$', '\\vim\\', '')
 	else
-		let g:winslow#TmpDir = './.vim/tmp/'    " Forward slashes work on Windows
+		let g:winslow#TmpDir = './.vim/tmp/'
 	end
 end
 
@@ -46,27 +49,35 @@ if !exists('s:easyModeIsActive')
     let s:easyModeIsActive = 0
 endif
 
-" Trigger for running a normal mode command in easy mode.
-" Default is leader followed by 'n'
+" Trigger for temporarily escaping from easy mode to run a single command.
+" Default is leader followed by 'n'. (mnemonic 'n' for 'normal')
+" Insert mode becomes normal mode. Select mode becomes visual mode.
+" Returns to insert mode automatically when the command is finished.
 if !exists('g:winslow#normalModeLeader')
     exe "let g:winslow#normalModeLeader = '<leader>n'"
 endif
 
-" Trigger for running Ex commands in easy mode.
-" Default is leader followed by the normal command key.
+" Trigger for running Ex commands from easy mode.
+" Default is leader followed by the normal Ex command key ':'.
 if !exists('g:winslow#commandModeLeader')
     exe "let g:winslow#commandModeLeader = '<leader>:'"
 endif
 
-" Trigger for switching between normal and easy/insert mode. Default is <Esc>
-" Set to zero to disable this behavior.
+" Trigger for switching between normal and easy/insert mode.
+" Default is leader followed by 'm'. (mnemonic 'm' for 'mode')
+" This is also used to switch from select mode to visual mode
+"
+" Trigger for escaping from easy mode to run multiple commands.
+" Default is leader followed by 'm'. (mnemonic 'm' for 'mode')
+" Insert mode becomes normal mode. Select mode becomes visual mode.
+" Does not return to insert mode unti this mapping is invoked again.
 if !exists('g:winslow#easyModeSwitch')
     let g:winslow#easyModeSwitch = '<Leader>m'
-    let g:winslow#easyModeSwitchHint = '<Leader>m'
+    let g:winslow#easyModeSwitchHint = '<Leader>m'  " This is the hint next to the menu entry
 endif
 
-" Boolean indicating whether easy mode switch should have a duration of one
-" command (True) or allow multiple consecutive commands. (False)
+" Boolean indicating whether easy mode switch should remain active
+" after easy mode is toggled off. 
 " NOTE: Even if this is set to 1 the switch is not activated until easy mode
 " is activated. Call winslow#MapEasyModeSwitch() to activate it beforehand.
 if !exists('g:winslow#easyModeSwitchIsPersistent')
@@ -87,7 +98,6 @@ endfunction
 
 " Returns corresponding unmap command for a given map command.
 " map - a map command without the rhs (right hand side)
-"       that when executed returns the current mapping or 'No mapping found'
 function! s:UnmapCommand( map )
     " Generate unmap command by eliminating 'nore' and adding 'un'
     " TODO: This has not been fully verified
@@ -99,7 +109,7 @@ endfunction
 
 " Adds reset for current state of a Vim mapping to the teardown cmds
 " map - a map command without the rhs (right hand side)
-"       that when executed returns the current mapping or 'No mapping found'
+"       displays the current mapping or 'No mapping found'
 function! s:AddTeardownMapping( map )
     " Redirect output of map query to a variable
     redir => map_state
@@ -135,7 +145,6 @@ endfunction
 
 
 " Fix for idiosyncracies with paste mode
-" TODO: Find another way to fix without re-indenting
 function! <SID>PasteFix()
     let save_paste = &paste
 	let &paste = 1
@@ -145,7 +154,7 @@ endfunction
 
 
 " Fix for idiosyncracies with pasting in over selcted text
-" TODO: See if global vars can be avoided
+" TODO: See if global vars can be avoided (Need something usable in mappings)
 function! <SID>VisualModePasteFix()
     " NOTE: ==# is like == but case-sensitive
     if g:VisualMode ==# 'v'
@@ -300,16 +309,16 @@ function! winslow#ActivateEasyMode()
     exe 'inoremap ' . g:winslow#commandModeLeader . ' <C-o>:'
     exe 'snoremap ' . g:winslow#commandModeLeader . ' <C-o>:'
 
-    " Trigger for escaping insert mode to run commands in normal mode
+    " Switch for toggling easy mode on and off
     call s:AddTeardownMapping( 'map ' . g:winslow#easyModeSwitch )
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeSwitch )
 	call winslow#MapEasyModeSwitch()
-	exe 'amenu <silent>  5.10 &Easy.&Toggle\ Easy\ Mode'
-		\ . exists('g:winslow#easyModeSwitchHint') ? '<Tab>' . g:winslow#easyModeSwitchHint : ''
-		\ .	' ' . g:winslow#easyModeSwitch
-	cunmenu &Easy.&Toggle\ Easy\ Mode
-    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode
-		\ :silent! call winslow#DeactivateEasyMode(0)<CR>
+	exe 'amenu <silent> 5.10 &Easy.&Toggle\ Easy\ Mode'
+		\ . (exists('g:winslow#easyModeSwitchHint') ? '<Tab>' . g:winslow#easyModeSwitchHint : '')
+		\ . ' ' . g:winslow#easyModeSwitch
+	" cunmenu &Easy.&Toggle\ Easy\ Mode
+    " amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode
+	" 	\ :silent! call winslow#DeactivateEasyMode(0)<CR>
 
 
     " FILE MAPPINGS
@@ -421,9 +430,6 @@ function! winslow#DeactivateEasyMode( ... )
 
     let persistentSwitch = get(a:000, 0, g:winslow#easyModeSwitchIsPersistent)
 
-	" TODO: Find out why this seems necessary to restore normal <Esc> behavior
-	" iunmap <Esc>
-
 	if !persistentSwitch
 		call winslow#UnmapEasyModeSwitch()
 	endif
@@ -453,17 +459,17 @@ function! winslow#ToggleEasyMode()
 endfunction
 
 " Setup keymap to switch in/out of easy mode behavior
-" If persistent flag is set the mapping will remain in effect when
-" easy mode is toggled off
+" If persistent flag is set the mapping will still remain in effect
+" after easy mode is toggled off
 function! winslow#MapEasyModeSwitch()
-	let s:unmapEasyModeSwitch = []
+	let s:unmapEasyModeSwitch = []    " list to save unmap commands
 	if exists('g:winslow#easyModeSwitch')
 		if g:winslow#easyModeSwitchIsPersistent
 			let s:unmapEasyModeSwitch = [ 
 					\ s:UnmapCommand('map ' . g:winslow#easyModeSwitch),
 					\ s:UnmapCommand('imap ' . g:winslow#easyModeSwitch),
-					\ s:UnmapCommand('vmap ' . g:winslow#easyModeSwitch)
-					\ s:UnmapCommand('smap ' . g:winslow#easyModeSwitch)
+					\ s:UnmapCommand('vmap ' . g:winslow#easyModeSwitch),
+					\ s:UnmapCommand('smap ' . g:winslow#easyModeSwitch,
 					\ ]
 			exe 'noremap <silent> ' . g:winslow#easyModeSwitch . ' :call winslow#ToggleEasyMode()<CR>'
 			exe 'inoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-o>:call winslow#ToggleEasyMode()<CR>'
