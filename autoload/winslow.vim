@@ -7,6 +7,13 @@
 "				See the file LICENSE or <http://www.gnu.org/licenses/>.
 
 
+" Guard against repeat sourcing of this script
+if exists('g:loaded_winslowPlugin')
+	finish
+end
+let g:loaded_winslowPlugin = 1
+
+
 " Set directory where temporary files can be stored.
 " Defaults to 'vim' folder at the system temp path
 " (trailing forward slash included - forward slashes work on both Unix and Windows)
@@ -39,22 +46,23 @@ if !exists('s:easyModeIsActive')
     let s:easyModeIsActive = 0
 endif
 
-" Leader for easy mode. This will trigger normal mode leader commands.
-" Default is the normal leader pressed twice. 
-if !exists('g:winslow#easyModeLeader')
-    let g:winslow#easyModeLeader = '<Leader><Leader>'
+" Trigger for running a normal mode command in easy mode.
+" Default is leader followed by 'n'
+if !exists('g:winslow#normalModeLeader')
+    exe "let g:winslow#normalModeLeader = '<leader>n'"
 endif
 
 " Trigger for running Ex commands in easy mode.
 " Default is leader followed by the normal command key.
-if !exists('g:winslow#easyModeCommandLeader')
-    exe "let g:winslow#easyModeCommandLeader = '<leader>:'"
+if !exists('g:winslow#commandModeLeader')
+    exe "let g:winslow#commandModeLeader = '<leader>:'"
 endif
 
 " Trigger for switching between normal and easy/insert mode. Default is <Esc>
 " Set to zero to disable this behavior.
 if !exists('g:winslow#easyModeSwitch')
-    let g:winslow#easyModeSwitch = '<Esc>'
+    let g:winslow#easyModeSwitch = '<Leader>m'
+    let g:winslow#easyModeSwitchHint = '<Leader>m'
 endif
 
 " Boolean indicating whether easy mode switch should have a duration of one
@@ -237,6 +245,42 @@ function! winslow#ActivateEasyMode()
 	snoremap <S-PageUp> <C-o><PageUp>
 	snoremap <S-PageDown> <C-o><PageDown>
 
+	" If alt is pressed, do the same thing as shift does
+	" (Some terminals have problems with Shift-key combinations)
+	call s:AddTeardownMapping('imap <M-Up>')
+	call s:AddTeardownMapping('imap <M-Down>')
+	call s:AddTeardownMapping('imap <M-Left>')
+	call s:AddTeardownMapping('imap <M-Right>')
+	call s:AddTeardownMapping('imap <M-Home>')
+	call s:AddTeardownMapping('imap <M-End>')
+	call s:AddTeardownMapping('imap <M-PageUp>')
+	call s:AddTeardownMapping('imap <M-PageDown>')
+	imap <M-Up> <S-Up>
+	imap <M-Down> <S-Down>
+	imap <M-Left> <S-Left>
+	imap <M-Right> <S-Right>
+	imap <M-Home> <S-Home>
+	imap <M-End> <S-End>
+	imap <M-PageUp> <S-PageUp>
+	imap <M-PageDown> <S-PageDown>
+
+	call s:AddTeardownMapping('smap <M-Up>')
+	call s:AddTeardownMapping('smap <M-Down>')
+	call s:AddTeardownMapping('smap <M-Left>')
+	call s:AddTeardownMapping('smap <M-Right>')
+	call s:AddTeardownMapping('smap <M-Home>')
+	call s:AddTeardownMapping('smap <M-End>')
+	call s:AddTeardownMapping('smap <M-PageUp>')
+	call s:AddTeardownMapping('smap <M-PageDown>')
+	smap <M-Up> <S-Up>
+	smap <M-Down> <S-Down>
+	smap <M-Left> <S-Left>
+	smap <M-Right> <S-Right>
+	smap <M-Home> <S-Home>
+	smap <M-End> <S-End>
+	smap <M-PageUp> <S-PageUp>
+	smap <M-PageDown> <S-PageDown>
+
     " Delete unwanted keymaps that conflict w. select mode
     " (Teardown exrc file should record any previous mappings)
 	if !exists('g:winslow#DisableKeymapsToImproveSelectMode') || !g:winslow#DisableKeymapsToImproveSelectMode
@@ -244,28 +288,29 @@ function! winslow#ActivateEasyMode()
 	    silent! sunmap %
 	endif
 
-    " Easy mode trigger for normal-mode leader commands.
-    call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeLeader )
-    " call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeLeader )
-    exe 'inoremap ' . g:winslow#easyModeLeader . ' <C-\><C-n><Leader>'
-    " exe 'snoremap ' . g:winslow#easyModeLeader . ' <C-g><Leader>'
+    " Trigger for running a single normal command from easy mode
+    call s:AddTeardownMapping( 'imap ' . g:winslow#normalModeLeader )
+    call s:AddTeardownMapping( 'smap ' . g:winslow#normalModeLeader )
+    exe 'inoremap ' . g:winslow#normalModeLeader . ' <C-o>'
+    exe 'snoremap ' . g:winslow#normalModeLeader . ' <C-o>'
 
     " Trigger for running Ex commands from easy mode
-    call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeCommandLeader )
-    " call s:AddTeardownMapping( 'smap ' . g:winslow#easyModeCommandLeader )
-    exe 'inoremap ' . g:winslow#easyModeCommandLeader . ' <C-o>:'
-    " exe 'snoremap ' . g:winslow#easyModeCommandLeader . ' <C-g>:'
+    call s:AddTeardownMapping( 'imap ' . g:winslow#commandModeLeader )
+    call s:AddTeardownMapping( 'smap ' . g:winslow#commandModeLeader )
+    exe 'inoremap ' . g:winslow#commandModeLeader . ' <C-o>:'
+    exe 'snoremap ' . g:winslow#commandModeLeader . ' <C-o>:'
 
     " Trigger for escaping insert mode to run commands in normal mode
+    call s:AddTeardownMapping( 'map ' . g:winslow#easyModeSwitch )
     call s:AddTeardownMapping( 'imap ' . g:winslow#easyModeSwitch )
-	exe 'inoremap ' . g:winslow#easyModeSwitch . ' <C-o>'
-	call winslow#MapEasyModeSwitch()  " May overwrite previous mapping
-    imenu <silent> 5.10 &Easy.&Toggle\ Easy\ Mode<Tab>Escape <Esc>
-    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode<Tab> :silent! call winslow#DeactivateEasyMode(0)<CR>
-	" <Esc> in select mode just cancels the text selection
-    call s:AddTeardownMapping( 'smap <Esc>' )
-	snoremap <Esc> <C-\><C-g>
-	
+	call winslow#MapEasyModeSwitch()
+	exe 'amenu <silent>  5.10 &Easy.&Toggle\ Easy\ Mode'
+		\ . exists('g:winslow#easyModeSwitchHint') ? '<Tab>' . g:winslow#easyModeSwitchHint : ''
+		\ .	' ' . g:winslow#easyModeSwitch
+	cunmenu &Easy.&Toggle\ Easy\ Mode
+    amenu <silent> 5.9000 &Easy.&Deactivate\ Easy\ Mode
+		\ :silent! call winslow#DeactivateEasyMode(0)<CR>
+
 
     " FILE MAPPINGS
 
@@ -379,8 +424,8 @@ function! winslow#DeactivateEasyMode( ... )
 	" TODO: Find out why this seems necessary to restore normal <Esc> behavior
 	" iunmap <Esc>
 
-	if !persistentSwitch && exists('s:unmapEasyModeSwitch') && s:unmapEasyModeSwitch != ''
-		exe s:unmapEasyModeSwitch
+	if !persistentSwitch
+		call winslow#UnmapEasyModeSwitch()
 	endif
 
     " Restore previous settings and mappings from backup
@@ -407,20 +452,35 @@ function! winslow#ToggleEasyMode()
 	endif
 endfunction
 
-
-" Setup Esc key as switch for easy mode behavior
-" If persistent flag is set this will overwrite any normal mode mappngs for the
-" <Esc> key and normal mode will stay active until <Esc> is pressed.
-" If not persistent <Esc> will act like Vim's native <C-o> does, allowing only
-" a single normal mode command before returning to insert mode automatically.
+" Setup keymap to switch in/out of easy mode behavior
+" If persistent flag is set the mapping will remain in effect when
+" easy mode is toggled off
 function! winslow#MapEasyModeSwitch()
+	let s:unmapEasyModeSwitch = []
 	if exists('g:winslow#easyModeSwitch')
 		if g:winslow#easyModeSwitchIsPersistent
-			let s:unmapEasyModeSwitch = s:UnmapCommand('map ' . g:winslow#easyModeSwitch)
+			let s:unmapEasyModeSwitch = [ 
+					\ s:UnmapCommand('map ' . g:winslow#easyModeSwitch),
+					\ s:UnmapCommand('imap ' . g:winslow#easyModeSwitch),
+					\ s:UnmapCommand('vmap ' . g:winslow#easyModeSwitch)
+					\ s:UnmapCommand('smap ' . g:winslow#easyModeSwitch)
+					\ ]
 			exe 'noremap <silent> ' . g:winslow#easyModeSwitch . ' :call winslow#ToggleEasyMode()<CR>'
 			exe 'inoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-o>:call winslow#ToggleEasyMode()<CR>'
+			exe 'vnoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-\><C-n>:call winslow#ToggleEasyMode()<CR><C-\><C-n>gv'
+			exe 'snoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-g><C-\><C-n>:call winslow#ToggleEasyMode()<CR><C-\><C-n>gv'
 		endif
 	endif
 endfunction
 
+" Clear mappings for the easy mode switch
+function! winslow#UnmapEasyModeSwitch()
+	if exists('s:unmapEasyModeSwitch')
+		   \ && type('s:unmapEasyModeSwitch') == type([])
+		   \ && len(s:unmapEasyModeSwitch) > 0
+		for s in s:unmapEasyModeSwitch
+			exe s
+		endfor
+	endif
+endfunction
 
