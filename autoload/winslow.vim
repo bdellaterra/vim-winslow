@@ -167,6 +167,8 @@ function! <SID>VisualModePasteFix()
 endfunction
 
 
+" TODO: Create command(s) something like SNoremapWithTeardown
+
 " Function to setup easy mode configurations, while also preparing an
 " exrc file to undo them
 function! winslow#ActivateEasyMode()
