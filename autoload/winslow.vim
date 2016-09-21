@@ -471,7 +471,7 @@ function! winslow#MapEasyModeSwitch()
                         \ s:UnmapCommand('map ' . g:winslow#easyModeSwitch),
                         \ s:UnmapCommand('imap ' . g:winslow#easyModeSwitch),
                         \ s:UnmapCommand('vmap ' . g:winslow#easyModeSwitch),
-                        \ s:UnmapCommand('smap ' . g:winslow#easyModeSwitch,
+                        \ s:UnmapCommand('smap ' . g:winslow#easyModeSwitch),
                         \ ]
             exe 'noremap <silent> ' . g:winslow#easyModeSwitch . ' :call winslow#ToggleEasyMode()<CR>'
             exe 'inoremap <silent> ' . g:winslow#easyModeSwitch . ' <C-o>:call winslow#ToggleEasyMode()<CR>'
